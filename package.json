@@ -41,7 +41,7 @@
         "build": "npm run build:base -- --sourcemap",
         "build:watch": "npm run build:base -- --sourcemap --watch",
         "test:compile": "tsc -p ./",
-        "package": "npm run build && npx vsce package"
+        "package": "npm run build:base -- --minify && npx vsce package"
     },
     "dependencies": {
         "find-up": "^5.0.0"
