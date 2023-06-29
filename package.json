@@ -1,47 +1,49 @@
 {
-  "name": "vscode-vitest-runner",
-  "displayName": "Vitest Runner",
-  "version": "0.0.4",
-  "main": "dist/index.js",
-  "icon": "logo.png",
-  "license": "MIT",
-  "description": "Vitest case runner.",
-  "publisher": "kingwl",
-  "engines": {
-    "vscode": "^1.65.0"
-  },
-  "categories": [
-    "Testing",
-    "Other"
-  ],
-  "keywords": [
-    "vitest",
-    "runner",
-    "codelens"
-  ],
-  "repository": "git@github.com:kwai-explore/vscode-vitest-runner.git",
-  "author": "kingwl <kingwenlu@gmail.com>",
-  "activationEvents": [
-    "onLanguage:typescript",
-    "onLanguage:javascript",
-    "onLanguage:typescriptreact",
-    "onLanguage:javascriptreact"
-  ],
-  "devDependencies": {
-    "@types/vscode": "^1.65.0",
-    "esbuild": "^0.14.27",
-    "prettier": "^2.6.0",
-    "typescript": "^4.6.2",
-    "vitest": "^0.7.7",
-    "vsce": "^2.7.0"
-  },
-  "scripts": {
-    "build": "node ./scripts/build.js",
-    "package": "yarn build && yarn vsce package",
-    "format:check": "prettier --config ./prettier.config.json --c ./src/**/*.ts",
-    "format:write": "yarn format:check --write"
-  },
-  "dependencies": {
-    "find-up": "^5.0.0"
-  }
+    "name": "despark-monorepo-vitest-runner",
+    "displayName": "Despark Monorepo Vitest Runner",
+    "version": "0.0.1",
+    "main": "dist/index.js",
+    "icon": "logo.png",
+    "license": "MIT",
+    "description": "Makes it easy to run test for the Despark Altrix FE monorepo.",
+    "publisher": "karamanliev",
+    "engines": {
+        "vscode": "^1.65.0"
+    },
+    "categories": [
+        "Testing",
+        "Other"
+    ],
+    "keywords": [
+        "vitest",
+        "runner",
+        "codelens"
+    ],
+    "repository": "git@github.com:karamanliev/vscode-monorepo-vitest-runner.git",
+    "author": "Hristo Karamanliev <hristo@karamanliev.com>",
+    "activationEvents": [
+        "onLanguage:typescript",
+        "onLanguage:javascript",
+        "onLanguage:typescriptreact",
+        "onLanguage:javascriptreact"
+    ],
+    "devDependencies": {
+        "@types/node": "^20.3.2",
+        "@types/vscode": "^1.65.0",
+        "esbuild": "^0.14.54",
+        "prettier": "^2.6.0",
+        "typescript": "^4.6.2",
+        "vitest": "^0.7.7",
+        "vsce": "^2.7.0"
+    },
+    "scripts": {
+        "build:base": "esbuild ./src/index.ts --bundle --outfile=dist/index.js --external:vscode --external:typescript --format=cjs --platform=node",
+        "build": "npm run build:base -- --sourcemap",
+        "build:watch": "npm run build:base -- --sourcemap --watch",
+        "test:compile": "tsc -p ./",
+        "package": "npm run build && npx vsce package"
+    },
+    "dependencies": {
+        "find-up": "^5.0.0"
+    }
 }
