@@ -1,55 +1,100 @@
-import * as vscode from 'vscode';
-import * as path from 'path';
-import * as findUp from 'find-up';
-import { configFiles } from './vitest-config-files';
+import * as vscode from 'vscode'
+import * as path from 'path'
+import * as findUp from 'find-up'
+import { configFiles } from './vitest-config-files'
 
 function getCwd(testFile: string) {
-    const configFilePath = findUp.sync(configFiles, { cwd: testFile });
+    const configFilePath = findUp.sync(configFiles, { cwd: testFile })
 
     if (!configFilePath) {
-        return;
+        return
     }
-    return path.dirname(configFilePath);
+    return path.dirname(configFilePath)
 }
 
-function buildVitestArgs({ caseName, casePath, sanitize = true }: { caseName: string, casePath: string, sanitize?: boolean }) {
-    let sanitizedCasePath = casePath;
+function buildVitestArgs({
+    caseName,
+    casePath,
+    sanitize = true,
+    watch = false,
+}: {
+    caseName: string | RegExp
+    casePath: string
+    sanitize?: boolean
+    watch?: boolean
+}) {
+    let sanitizedCasePath = casePath
     if (sanitize) {
-        sanitizedCasePath = JSON.stringify(casePath);
-        caseName = JSON.stringify(caseName);
+        sanitizedCasePath = JSON.stringify(casePath)
+        caseName = JSON.stringify(caseName)
     }
 
-    const args = ['vitest', 'run', '-t', caseName, '--dir', sanitizedCasePath];
+    const args = [
+        'vitest',
+        watch ? 'watch' : 'run',
+        '-t',
+        caseName,
+        '--dir',
+        sanitizedCasePath,
+    ]
 
-    const rootDir = getCwd(casePath);
+    const rootDir = getCwd(casePath)
     if (rootDir) {
-        args.push('--root', rootDir);
+        args.push('--root', rootDir)
     }
 
-    return args;
+    return args
 }
 
-let terminal: vscode.Terminal | undefined;
+let runTerminal: vscode.Terminal | undefined
+let watchTerminal: vscode.Terminal | undefined
 
-export function runInTerminal(text: string, filename: string) {
-    const casePath = path.dirname(filename);
-    let terminalAlreadyExists = true;
-    if (!terminal || terminal.exitStatus) {
-        terminalAlreadyExists = false;
-        terminal?.dispose();
-        terminal = vscode.window.createTerminal(`vscode-vitest-runner`);
+export function runInTerminal(
+    text: string,
+    filename: string,
+    opts: { watch?: boolean } = {}
+) {
+    const { watch } = opts
+    const casePath = path.dirname(filename)
+    const vitestArgs = buildVitestArgs({
+        caseName: text,
+        casePath: casePath,
+        watch,
+    })
+    const npxArgs = ['npx', ...vitestArgs]
+
+    let runTerminalAlreadyExists = true
+    let watchTerminalAlreadyExists = true
+
+    if (watch) {
+        if (!watchTerminal || watchTerminal.exitStatus) {
+            watchTerminalAlreadyExists = false
+            watchTerminal?.dispose()
+            watchTerminal = vscode.window.createTerminal('Vitest Watcher')
+        }
+
+        if (watchTerminalAlreadyExists) {
+            // CTRL-C to stop the previous run
+            watchTerminal.sendText('\x03')
+        }
+
+        watchTerminal.sendText(npxArgs.join(' '))
+        watchTerminal.show(true)
+    } else {
+        if (!runTerminal || runTerminal.exitStatus) {
+            runTerminalAlreadyExists = false
+            runTerminal?.dispose()
+            runTerminal = vscode.window.createTerminal('Vitest Runner')
+        }
+
+        if (runTerminalAlreadyExists) {
+            // CTRL-C to stop the previous run
+            runTerminal.sendText('\x03')
+        }
+
+        runTerminal.sendText(npxArgs.join(' '))
+        runTerminal.show(true)
     }
-
-    const vitestArgs = buildVitestArgs({ caseName: text, casePath: casePath });
-    const npxArgs = ['npx', ...vitestArgs];
-
-    if (terminalAlreadyExists) {
-        // CTRL-C to stop the previous run
-        terminal.sendText('\x03');
-    }
-
-    terminal.sendText(npxArgs.join(' '), true);
-    terminal.show();
 }
 
 function buildDebugConfig(
@@ -57,20 +102,24 @@ function buildDebugConfig(
     text: string
 ): vscode.DebugConfiguration {
     return {
-        name: 'Debug vitest case',
+        name: 'Vitest Debugger',
         request: 'launch',
-        runtimeArgs: buildVitestArgs({ caseName: text, casePath: casePath, sanitize: false }),
+        runtimeArgs: buildVitestArgs({
+            caseName: text,
+            casePath: casePath,
+            sanitize: false,
+        }),
         cwd: getCwd(casePath) || casePath,
         runtimeExecutable: 'npx',
         skipFiles: ['<node_internals>/**'],
         type: 'pwa-node',
         console: 'integratedTerminal',
-        internalConsoleOptions: 'neverOpen'
-    };
+        internalConsoleOptions: 'neverOpen',
+    }
 }
 
 export function debugInTermial(text: string, filename: string) {
-    const casePath = path.dirname(filename);
-    const config = buildDebugConfig(casePath, text);
-    vscode.debug.startDebugging(undefined, config);
+    const casePath = path.dirname(filename)
+    const config = buildDebugConfig(casePath, text)
+    vscode.debug.startDebugging(undefined, config)
 }

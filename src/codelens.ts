@@ -1,10 +1,14 @@
-import type * as ts from 'typescript';
-import * as vscode from 'vscode';
-import { TextCase } from './types';
-import { flatMap } from './utils';
-import { RunVitestCommand, DebugVitestCommand } from './vscode';
+import type * as ts from 'typescript'
+import * as vscode from 'vscode'
+import { TextCase } from './types'
+import { flatMap } from './utils'
+import {
+    RunVitestCommand,
+    WatchVitestCommand,
+    DebugVitestCommand,
+} from './vscode'
 
-const caseText = new Set(['it', 'describe','test']);
+const caseText = new Set(['it', 'describe', 'test'])
 
 function tryGetVitestTestCase(
     typescript: typeof ts,
@@ -12,31 +16,31 @@ function tryGetVitestTestCase(
     file: ts.SourceFile
 ): TextCase | undefined {
     if (!typescript.isIdentifier(callExpression.expression)) {
-        return undefined;
+        return undefined
     }
 
     if (!caseText.has(callExpression.expression.text)) {
-        return undefined;
+        return undefined
     }
 
-    const args = callExpression.arguments;
+    const args = callExpression.arguments
     if (args.length < 2) {
-        return undefined;
+        return undefined
     }
 
-    const [testName, body] = args;
+    const [testName, body] = args
     if (
         !typescript.isStringLiteralLike(testName) ||
         !typescript.isFunctionLike(body)
     ) {
-        return undefined;
+        return undefined
     }
 
     return {
         start: testName.getStart(file),
         end: testName.getEnd(),
-        text: testName.text
-    };
+        text: testName.text,
+    }
 }
 
 export class CodeLensProvider implements vscode.CodeLensProvider {
@@ -46,21 +50,21 @@ export class CodeLensProvider implements vscode.CodeLensProvider {
         document: vscode.TextDocument,
         token: vscode.CancellationToken
     ): vscode.ProviderResult<vscode.CodeLens[]> {
-        const ts = this.typescript;
+        const ts = this.typescript
 
-        const text = document.getText();
+        const text = document.getText()
         const sourceFile = ts.createSourceFile(
             'dummy',
             text,
             ts.ScriptTarget.Latest
-        );
-        const testCases: TextCase[] = [];
+        )
+        const testCases: TextCase[] = []
 
-        visitor(sourceFile);
+        visitor(sourceFile)
 
-        return flatMap(testCases, x => {
-            const start = document.positionAt(x.start);
-            const end = document.positionAt(x.end);
+        return flatMap(testCases, (x) => {
+            const start = document.positionAt(x.start)
+            const end = document.positionAt(x.end)
 
             return [
                 new vscode.CodeLens(
@@ -69,23 +73,27 @@ export class CodeLensProvider implements vscode.CodeLensProvider {
                 ),
                 new vscode.CodeLens(
                     new vscode.Range(start, end),
+                    new WatchVitestCommand(x.text, document.fileName)
+                ),
+                new vscode.CodeLens(
+                    new vscode.Range(start, end),
                     new DebugVitestCommand(x.text, document.fileName)
-                )
-            ];
-        });
+                ),
+            ]
+        })
 
         function visitor(node: ts.Node) {
             if (token.isCancellationRequested) {
-                return;
+                return
             }
 
             if (ts.isCallExpression(node)) {
-                const testCase = tryGetVitestTestCase(ts, node, sourceFile);
+                const testCase = tryGetVitestTestCase(ts, node, sourceFile)
                 if (testCase) {
-                    testCases.push(testCase);
+                    testCases.push(testCase)
                 }
             }
-            ts.forEachChild(node, visitor);
+            ts.forEachChild(node, visitor)
         }
     }
 }
