@@ -49,7 +49,37 @@ function buildVitestArgs({
 let runTerminal: vscode.Terminal | undefined
 let watchTerminal: vscode.Terminal | undefined
 
-export function runInTerminal(
+function getOrCreateTerminal(name: string): Promise<vscode.Terminal> {
+    const existingTerminal = vscode.window.terminals.find(
+        (terminal) => terminal.name === name
+    )
+
+    if (existingTerminal) {
+        return new Promise((resolve) => {
+            existingTerminal.sendText('\x03') // Ctrl+C to stop the process
+            setTimeout(() => {
+                resolve(existingTerminal)
+            }, 100)
+        })
+    }
+
+    return new Promise((resolve) => {
+        vscode.window.createTerminal(name)
+
+        vscode.window.onDidOpenTerminal((terminal) => {
+            if (terminal.name === name) {
+                resolve(terminal)
+            }
+        })
+    })
+}
+
+function sendToTerminal(terminal: vscode.Terminal, text: string) {
+    terminal.sendText(text)
+    terminal.show(true)
+}
+
+export async function runInTerminal(
     text: string,
     filename: string,
     opts: { watch?: boolean } = {}
@@ -61,39 +91,14 @@ export function runInTerminal(
         casePath: casePath,
         watch,
     })
-    const npxArgs = ['npx', ...vitestArgs]
-
-    let runTerminalAlreadyExists = true
-    let watchTerminalAlreadyExists = true
+    const npxArgs = ['npx', ...vitestArgs].join(' ')
 
     if (watch) {
-        if (!watchTerminal || watchTerminal.exitStatus) {
-            watchTerminalAlreadyExists = false
-            watchTerminal?.dispose()
-            watchTerminal = vscode.window.createTerminal('Vitest Watcher')
-        }
-
-        if (watchTerminalAlreadyExists) {
-            // CTRL-C to stop the previous run
-            watchTerminal.sendText('\x03')
-        }
-
-        watchTerminal.sendText(npxArgs.join(' '))
-        watchTerminal.show(true)
+        watchTerminal = await getOrCreateTerminal('Vitest Watcher')
+        sendToTerminal(watchTerminal, npxArgs)
     } else {
-        if (!runTerminal || runTerminal.exitStatus) {
-            runTerminalAlreadyExists = false
-            runTerminal?.dispose()
-            runTerminal = vscode.window.createTerminal('Vitest Runner')
-        }
-
-        if (runTerminalAlreadyExists) {
-            // CTRL-C to stop the previous run
-            runTerminal.sendText('\x03')
-        }
-
-        runTerminal.sendText(npxArgs.join(' '))
-        runTerminal.show(true)
+        runTerminal = await getOrCreateTerminal('Vitest Runner')
+        sendToTerminal(runTerminal, npxArgs)
     }
 }
 
