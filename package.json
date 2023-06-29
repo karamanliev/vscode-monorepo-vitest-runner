@@ -1,6 +1,6 @@
 {
-    "name": "despark-monorepo-vitest-runner",
-    "displayName": "Despark Monorepo Vitest Runner",
+    "name": "vscode-monorepo-vitest-runner",
+    "displayName": "VSCode Monorepo Vitest Runner",
     "version": "0.0.1",
     "main": "dist/index.js",
     "icon": "logo.png",

@@ -1,5 +1,5 @@
-# vscode-vitest-runner
+# vscode-monorepo-vitest-runner
 
-Run your test case by vitest.
+Run / Watch / Debug your test case in the Despark FE monorepo.
 
-![preview](https://github.com/kwai-explore/vscode-vitest-runner/blob/main/docs/preview.png?raw=true)
+![preview](https://github.com/karamanliev/vscode-monorepo-vitest-runner/blob/main/docs/preview.png?raw=true)
