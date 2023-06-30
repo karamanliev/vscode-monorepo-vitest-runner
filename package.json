@@ -39,7 +39,7 @@
     "scripts": {
         "build:base": "esbuild ./src/index.ts --bundle --outfile=dist/index.js --external:vscode --external:typescript --format=cjs --platform=node",
         "build": "npm run build:base -- --sourcemap",
-        "build:watch": "npm run build:base -- --sourcemap --watch",
+        "watch": "npm run build:base -- --sourcemap --watch",
         "test:compile": "tsc -p ./",
         "package": "npm run build:base -- --minify && npx vsce package"
     },
