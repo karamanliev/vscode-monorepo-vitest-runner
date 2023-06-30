@@ -55,8 +55,12 @@ function getOrCreateTerminal(name: string): Promise<vscode.Terminal> {
     )
 
     if (existingTerminal) {
-        return new Promise((resolve) => {
-            existingTerminal.sendText('\x03') // Ctrl+C to stop the process
+        return new Promise(async (resolve) => {
+            const processId = await existingTerminal.processId
+            if (processId) {
+                existingTerminal.sendText('\x03') // Ctrl+C to stop the process
+            }
+
             setTimeout(() => {
                 resolve(existingTerminal)
             }, 100)
@@ -65,9 +69,9 @@ function getOrCreateTerminal(name: string): Promise<vscode.Terminal> {
 
     return new Promise((resolve) => {
         vscode.window.createTerminal(name)
-
-        vscode.window.onDidOpenTerminal((terminal) => {
+        const disposable = vscode.window.onDidOpenTerminal((terminal) => {
             if (terminal.name === name) {
+                disposable.dispose() // Dispose the event listener
                 resolve(terminal)
             }
         })
